@@ -1,0 +1,8 @@
+com\umeclub\Account.class
+com\umeclub\RC20Coin.class
+com\umeclub\MyClassLoader.class
+com\umeclub\util\AsmbleUtil.class
+com\umeclub\util\CheckUtil.class
+com\umeclub\util\CommonUtil.class
+com\umeclub\App.class
+com\umeclub\Executor.class
