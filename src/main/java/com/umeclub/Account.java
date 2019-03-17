@@ -19,7 +19,7 @@ public class Account {
 
     public static int allowed(String owner, String spender) {
         System.out.println("allowed " + owner + " to " + spender);
-        return 2;
+        return 200;
     }
 
     public static int setBalance(int num) {

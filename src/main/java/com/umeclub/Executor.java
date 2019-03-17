@@ -26,7 +26,7 @@ public class Executor<T> {
 
     protected final List<Integer> strPtrs = new ArrayList<>();
 
-    // protected final List<String> exactlyResult = new ArrayList<>();
+    protected final List<String> exactlyResult = new ArrayList<>();
 
     protected final T instance;
 
@@ -72,7 +72,11 @@ public class Executor<T> {
         int offset = 4096;
         for (String arg : args) {
             strPtrs.add(offset);
-            // exactlyResult.add(arg);
+            if (isNumeric(arg)) {
+                exactlyResult.add(arg);
+            } else {
+                exactlyResult.add(String.valueOf(offset));
+            }
             offset += newString(arg, offset);
         }
         for (int strPtr : strPtrs) {
@@ -80,7 +84,7 @@ public class Executor<T> {
             offset += 8;
         }
         // Run and return exit code
-        run.invoke(instance, strPtrs.toArray());
+        run.invoke(instance, exactlyResult.stream().map(r -> Integer.parseInt(r)).toArray());
         return exitCode;
     }
 
@@ -147,6 +151,7 @@ public class Executor<T> {
     }
 
     protected int allowed(int a, int b) {
+        System.out.println("====== allowed ======");
         String owner = getParam(a);
         String spender = getParam(b);
         int result = Account.allowed(owner, spender);
@@ -154,50 +159,56 @@ public class Executor<T> {
     }
 
     protected int getAddress() {
-        return 1;
+        System.out.println("====== getAddress ======");
+        String myAddress = "Satoshi";
+        return changeToPtr(myAddress);
     }
 
     protected int getMyBalance() {
         System.out.println("====== getMyBalance ======");
         System.out.println("My Balance is : 4300");
-        return changeToPtr(String.valueOf(4300));
+        return 4300;
     }
 
     protected int getOtherBalance(int a) {
-        System.out.println("Your Balance is: 100");
+        System.out.println(getParam(a) + "'s Balance is: 100");
         return 100;
     }
 
     protected int initToken(int a, int b, int c, int d) {
         String tokenName = getParam(a);
-        int num = Integer.valueOf(getParam(b));
+        int num = b;
         String symbol = getParam(c);
-        int precision = Integer.valueOf(getParam(d));
+        int precision = d;
         RC20Coin token = new RC20Coin(tokenName, num, symbol, precision);
         return 1;
     }
 
     protected int setAllowed(int a, int b) {
-        System.out.println("setAllowed");
+        System.out.println("====== setAllowed ======");
         return 1;
     }
 
     protected int setBalance(int a) {
         System.out.println("====== setBalance ======");
-        System.out.println(a);
-        Account.setBalance(Integer.valueOf(getParam(a)));
+        Account.setBalance(a);
         return 1;
     }
 
     protected int setOtherBalance(int a, int b) {
-        Account.setOtherBalance(getParam(a), Integer.valueOf(getParam(b)));
+        System.out.println("====== setOtherBalance ======");
+        System.out.println(b);
+        Account.setOtherBalance(getParam(a), b);
         return 1;
     }
 
     protected String getParam(int a) {
+        System.out.println("====== getParam ======");
         if (!strPtrs.contains(a) /*&& !exactlyResult.contains(String.valueOf(a))*/) {
-            return "";
-        } else if(strPtrs.contains(a) && strPtrs.indexOf(a) == strPtrs.size() - 1) {
+            return new String(getBytes(a, new byte[PAGE_SIZE - a])).trim();
+        }/* else if(exactlyResult.contains(String.valueOf(a))) {
+            return String.valueOf(a);
+        } */else if(strPtrs.contains(a) && strPtrs.indexOf(a) == strPtrs.size() - 1) {
             return new String(getBytes(a, new byte[PAGE_SIZE - a])).trim();
         } else {
             return new String(getBytes(a, new byte[strPtrs.get(strPtrs.indexOf(a) + 1) - a])).trim();
@@ -207,8 +218,11 @@ public class Executor<T> {
     protected int changeToPtr(String param) {
         int preOffsetPtr = offsetPtr;
         strPtrs.add(offsetPtr);
+        exactlyResult.add(String.valueOf(offsetPtr));
         offsetPtr += newString(param, offsetPtr);
-        mem.putLong(preOffsetPtr, preOffsetPtr);
+        mem.position(preOffsetPtr);
+        mem.put((param + '\0').getBytes(StandardCharsets.UTF_8));
+        // mem.putLong(preOffsetPtr, preOffsetPtr);
         return preOffsetPtr;
     }
 
